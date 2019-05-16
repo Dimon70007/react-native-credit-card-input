@@ -36,21 +36,25 @@ const s = StyleSheet.create({
     width: 0,
   },
   leftPart: {
-    overflow: "hidden",
+    flexDirection: "row",
+    flexWrap: "nowrap",
+    // overflow: "hidden",
   },
   rightPart: {
     overflow: "hidden",
     flexDirection: "row",
+    flexWrap: "nowrap",
   },
   last4: {
     flex: 1,
     justifyContent: "center",
   },
   numberInput: {
-    width: INFINITE_WIDTH,
+    flex: 1,
+    // width: INFINITE_WIDTH,
   },
   expiryInput: {
-    width: 80,
+    width: 140,
   },
   cvcInput: {
     width: 80,
@@ -95,86 +99,112 @@ export default class LiteCreditCardInput extends Component {
 
   componentDidMount = () => this._focus(this.props.focused);
 
-  componentWillReceiveProps = newProps => {
+  componentWillReceiveProps = (newProps) => {
     if (this.props.focused !== newProps.focused) this._focus(newProps.focused);
   };
 
   _focusNumber = () => this._focus("number");
+
   _focusExpiry = () => this._focus("expiry");
 
-  _focus = field => {
+  _focus = (field) => {
     if (!field) return;
     this.refs[field].focus();
     LayoutAnimation.easeInEaseOut();
   }
 
-  _inputProps = field => {
+  _inputProps = (field) => {
     const {
       inputStyle, validColor, invalidColor, placeholderColor,
       placeholders, values, status,
       onFocus, onChange, onBecomeEmpty, onBecomeValid,
-      additionalInputsProps,
+      additionalInputsProps, focused,
     } = this.props;
 
     return {
       inputStyle: [s.input, inputStyle],
-      validColor, invalidColor, placeholderColor,
-      ref: field, field,
+      validColor,
+      invalidColor,
+      placeholderColor,
+      ref: field,
+      field,
 
       placeholder: placeholders[field],
       value: values[field],
       status: status[field],
-
-      onFocus, onChange, onBecomeEmpty, onBecomeValid,
+      focused: focused === field,
+      onFocus,
+      onChange,
+      onBecomeEmpty,
+      onBecomeValid,
       additionalInputProps: additionalInputsProps[field],
     };
   };
 
-  _iconToShow = () => {
+  _iconToShowFront = () => {
     const { focused, values: { type } } = this.props;
-    if (focused === "cvc" && type === "american-express") return "cvc_amex";
-    if (focused === "cvc") return "cvc";
     if (type) return type;
     return "placeholder";
   }
 
+  _iconToShowBack = () => {
+    const { focused, values: { type } } = this.props;
+    if (focused === "cvc" && type === "american-express") return "cvc_amex";
+    return "cvc";
+  }
+
   render() {
-    const { focused, values: { number }, inputStyle, status: { number: numberStatus } } = this.props;
+    const {
+      focused, values: { number }, inputStyle, status: { number: numberStatus }, style,
+      inputContainerStyle, inputFocusedStyle,
+    } = this.props;
     const showRightPart = focused && focused !== "number";
 
     return (
-      <View style={s.container}>
+      <View style={[s.container, style]}>
         <View style={[
           s.leftPart,
-          showRightPart ? s.hidden : s.expanded,
+          s.expanded,
+
         ]}>
-          <CCInput {...this._inputProps("number")}
-            keyboardType="numeric"
-            containerStyle={s.numberInput} />
+          <View style={[
+            // s.leftPart,
+            // // showRightPart ? s.hidden : s.expanded,
+            s.expanded,
+          ]}>
+            <CCInput
+              {...this._inputProps("number")}
+              inputFocusedStyle={focused === "number" && inputFocusedStyle}
+              keyboardType="numeric"
+              containerStyle={[s.numberInput, inputContainerStyle]} />
+          </View>
+          <TouchableOpacity onPress={this._focusNumber}>
+            <Image style={s.icon} source={Icons[this._iconToShowFront()]} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={showRightPart ? this._focusNumber : this._focusExpiry }>
-          <Image style={s.icon} source={Icons[this._iconToShow()]} />
-        </TouchableOpacity>
         <View style={[
           s.rightPart,
-          showRightPart ? s.expanded : s.hidden,
+          s.expanded,
         ]}>
-          <TouchableOpacity onPress={this._focusNumber}
-            style={s.last4}>
-            <View pointerEvents={"none"}>
-              <CCInput field="last4"
-                keyboardType="numeric"
-                value={ numberStatus === "valid" ? number.substr(number.length - 4, 4) : "" }
-                inputStyle={[s.input, inputStyle]}
-                containerStyle={[s.last4Input]} />
-            </View>
+          <View style={[
+            s.expanded,
+            s.rightPart,
+          // showRightPart ? s.expanded : s.hidden,
+          ]}>
+            <CCInput
+              {...this._inputProps("expiry")}
+              inputFocusedStyle={focused === "expiry" && inputFocusedStyle}
+              keyboardType="numeric"
+              containerStyle={[s.expiryInput, inputContainerStyle]} />
+            <CCInput
+              {...this._inputProps("cvc")}
+              inputFocusedStyle={focused === "cvc" && inputFocusedStyle}
+              keyboardType="numeric"
+              containerStyle={[s.cvcInput, inputContainerStyle]} />
+          </View>
+          <TouchableOpacity onPress={this._focusExpiry}>
+            <Image style={s.icon} source={Icons[this._iconToShowBack()]} />
           </TouchableOpacity>
-          <CCInput {...this._inputProps("expiry")}
-            keyboardType="numeric"
-            containerStyle={s.expiryInput} />
-          <CCInput {...this._inputProps("cvc")}
-            keyboardType="numeric"
-            containerStyle={s.cvcInput} />
         </View>
       </View>
     );
